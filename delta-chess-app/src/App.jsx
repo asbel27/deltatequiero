@@ -554,7 +554,7 @@ export default function App() {
             <main className="relative z-10 max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 py-10 items-center">
               <div className="lg:col-span-6 text-center lg:text-left space-y-8">
                 <h2 className="text-5xl md:text-8xl font-black uppercase leading-[0.9] tracking-tighter">JUEGA COMO <span className="text-[#f39200]">MAESTRO</span></h2>
-                <p className="text-stone-400 text-sm md:text-lg max-w-md mx-auto lg:mx-0 font-medium italic">Domina el tablero en el epicentro del ajedrez regional, Nacional e <Internacional></Internacional></p>
+                <p className="text-stone-400 text-sm md:text-lg max-w-md mx-auto lg:mx-0 font-medium italic">Domina el tablero en el epicentro del ajedrez regional, Nacional e Internacional</p>
                 <div className="space-y-8">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-lg mt-8">
                       {[{ l: 'Sede', v: '01', i: <MapPin size={14}/> }, { l: 'Atletas', v: totalAtletas, i: <Users size={14}/> }, { l: 'Categorías', v: '05', i: <Trophy size={14}/> }, { l: 'Ranking', v: 'FIDE', i: <Star size={14}/> }].map((st, idx) => (
