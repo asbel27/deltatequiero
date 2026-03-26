@@ -6,9 +6,10 @@ import {
   MapPin, Trash2, Lock, LogOut, User, Shield, Search,
   Trophy, Activity, CheckCircle, Camera, Loader2, Phone, Calendar, Star,
   Edit3, X, Users, Globe, AlertTriangle, Info, Award, Download, Filter, Save, ChevronDown,
-  ExternalLink, Mail, Fingerprint, LayoutDashboard, UserCheck, Clock, FileText, BarChart3, Printer, Layout, Hash, Menu
+  ExternalLink, Mail, Fingerprint, LayoutDashboard, UserCheck, Clock, FileText, BarChart3, Printer, Layout, Hash, Menu, FileSpreadsheet, Smartphone, CreditCard
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+import * as XLSX from 'xlsx';
 
 // --- CONFIGURACIÓN DE SUPABASE ---
 const supabaseUrl = 'https://mxiygrsutntseyllhcbb.supabase.co';
@@ -270,6 +271,185 @@ const ModalDiploma = ({ atleta, alCerrar }) => {
   );
 };
 
+// --- COMPONENTE: MODAL CARNET OFICIAL (PORTAL) ---
+const ModalCarnet = ({ atleta, alCerrar }) => {
+  if (!atleta) return null;
+  
+  const manejarImpresion = (e) => { e.preventDefault(); e.stopPropagation(); window.print(); };
+  
+  const numeroCarnet = `DTQ-${String(atleta.id).padStart(4, '0')}-${new Date().getFullYear()}`;
+  const categoriaAtleta = obtenerCategoria(atleta.edad);
+  
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto" style={{ pointerEvents: 'auto' }}>
+      <div className="relative max-w-4xl w-full my-10">
+        <div className="flex justify-between items-center mb-6 no-print relative z-[100]">
+          <button onClick={alCerrar} className="text-white flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:text-red-500 transition-all cursor-pointer bg-white/10 px-6 py-4 rounded-full border border-white/10"><X size={20}/> Cerrar</button>
+          <button onClick={manejarImpresion} className="bg-[#f39200] text-black flex items-center gap-3 font-black text-[10px] uppercase tracking-widest px-10 py-5 rounded-full hover:bg-white transition-all shadow-2xl cursor-pointer active:scale-95"><Printer size={18}/> Imprimir Carnet</button>
+        </div>
+        
+        {/* CARNET PRINCIPAL */}
+        <div className="carnet-container bg-white p-1 mx-auto shadow-2xl relative" style={{ width: '450px', maxWidth: '95vw' }}>
+          <div className="relative overflow-hidden rounded-lg" style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #0c0c0c 50%, #1a1a1a 100%)' }}>
+            {/* Borde dorado decorativo */}
+            <div className="absolute inset-0 border-[3px] border-double border-[#f39200] m-2 rounded-lg pointer-events-none"></div>
+            
+            {/* Header del carnet */}
+            <div className="bg-gradient-to-r from-[#f39200] to-[#d4790a] px-6 py-4 relative">
+              <div className="absolute inset-0 opacity-10 pointer-events-none">
+                <img src={logoDelta} className="w-full h-full object-contain" alt="" />
+              </div>
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-3">
+                  <img src={logoDelta} className="w-12 h-12 object-contain" alt="logo" />
+                  <div>
+                    <h3 className="text-black font-black text-lg uppercase tracking-tight leading-none">Delta Te Quiero</h3>
+                    <p className="text-black/70 text-[9px] font-bold uppercase tracking-widest">Club de Ajedrez</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-black font-black text-[10px] uppercase tracking-wider">Carnet Oficial</p>
+                  <p className="text-black/70 text-[8px] font-bold">Miembro Activo</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Cuerpo del carnet */}
+            <div className="px-6 py-5 relative">
+              {/* Watermark de fondo */}
+              <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center">
+                <img src={logoDelta} className="w-[200px]" alt="" />
+              </div>
+              
+              <div className="flex gap-4 relative z-10">
+                {/* Foto */}
+                <div className="flex-shrink-0">
+                  <div className="w-24 h-28 bg-gradient-to-br from-[#f39200]/20 to-black/40 rounded-lg overflow-hidden border-2 border-[#f39200]/30 flex items-center justify-center shadow-inner">
+                    {atleta.avatar_url ? (
+                      <img src={atleta.avatar_url} className="w-full h-full object-cover" alt="foto" />
+                    ) : (
+                      <div className="flex flex-col items-center text-[#f39200]/40">
+                        <User size={40} />
+                        <p className="text-[8px] mt-1">SIN FOTO</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Datos del atleta */}
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <p className="text-[#f39200] text-[8px] font-black uppercase tracking-widest mb-0.5">Nombre del Atleta</p>
+                    <h4 className="text-white font-black text-sm uppercase tracking-tight leading-tight">{atleta.nombre}</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[#f39200] text-[8px] font-black uppercase tracking-widest mb-0.5">Categoría</p>
+                      <p className="text-white font-bold text-xs">{categoriaAtleta}</p>
+                    </div>
+                    <div>
+                      <p className="text-[#f39200] text-[8px] font-black uppercase tracking-widest mb-0.5">Edad</p>
+                      <p className="text-white font-bold text-xs">{atleta.edad} años</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-[#f39200] text-[8px] font-black uppercase tracking-widest mb-0.5">Nivel / Rating</p>
+                    <p className="text-white font-bold text-xs">{atleta.nivel} • {atleta.elo_fide || 'UR'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-[#f39200] text-[8px] font-black uppercase tracking-widest mb-0.5">Contacto</p>
+                    <p className="text-white/80 font-medium text-[10px] truncate">{atleta.email}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Footer del carnet */}
+              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between relative z-10">
+                <div>
+                  <p className="text-[#f39200] text-[7px] font-black uppercase tracking-widest mb-0.5">Número de Carnet</p>
+                  <p className="text-white font-black text-xs tracking-wider">{numeroCarnet}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[#f39200] text-[7px] font-black uppercase tracking-widest mb-0.5">Válido Hasta</p>
+                  <p className="text-white font-black text-xs">12/2026</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Barra de seguridad inferior */}
+            <div className="h-2 bg-gradient-to-r from-[#f39200] via-[#f39200] to-[#d4790a]"></div>
+          </div>
+        </div>
+        
+        {/* CARNET TRASERO */}
+        <div className="carnet-trasero bg-white p-1 mx-auto shadow-2xl relative mt-6" style={{ width: '450px', maxWidth: '95vw' }}>
+          <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-gray-900 to-black">
+            {/* Borde dorado */}
+            <div className="absolute inset-0 border-[3px] border-double border-[#f39200] m-2 rounded-lg pointer-events-none"></div>
+            
+            <div className="p-6 relative">
+              {/* Barra de seguridad superior */}
+              <div className="h-2 bg-gradient-to-r from-[#f39200] via-[#f39200] to-[#d4790a] mb-4 -mx-6"></div>
+              
+              <div className="flex items-center gap-3 mb-4">
+                <img src={logoDelta} className="w-10 h-10 object-contain" alt="logo" />
+                <div>
+                  <h4 className="text-[#f39200] font-black text-sm uppercase">Delta Te Quiero</h4>
+                  <p className="text-white/50 text-[8px] font-bold uppercase tracking-widest">Club de Ajedrez</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 text-center mb-4">
+                <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold">Este carnet es propiedad de la</p>
+                <p className="text-[#f39200] font-black text-lg italic">Fundación Delta Te Quiero</p>
+                <p className="text-[9px] text-white/50 italic">Fundada y dirigida por Chugaby Hidalgo</p>
+              </div>
+              
+              <div className="bg-black/40 rounded-lg p-3 mb-4 border border-white/10">
+                <p className="text-[8px] text-[#f39200] font-black uppercase tracking-widest mb-1">Información Importante</p>
+                <p className="text-white/70 text-[9px] leading-relaxed">Este carnet es intransferible y acredita a su portador como atleta activo del club. Preséntelo cuando sea requerido por los directivos.</p>
+              </div>
+              
+              <div className="flex justify-center gap-4">
+                <div className="bg-white rounded px-3 py-1">
+                  <div className="flex gap-[2px]">
+                    {[...Array(12)].map((_, i) => <div key={i} className="w-1 bg-black h-3"></div>)}
+                  </div>
+                  <p className="text-black text-[7px] font-bold text-center mt-0.5">{numeroCarnet}</p>
+                </div>
+              </div>
+              
+              {/* Barra de seguridad inferior */}
+              <div className="h-2 bg-gradient-to-r from-[#f39200] via-[#f39200] to-[#d4790a] mt-4 -mx-6 mb-[-24px] rounded-b-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <style>{`
+        @media print {
+          .no-print, nav, footer, button, .absolute.inset-0 { display: none !important; }
+          body { background: white !important; overflow: hidden !important; margin: 0 !important; }
+          .carnet-container, .carnet-trasero { 
+            position: relative !important; 
+            width: 85mm !important; 
+            height: auto !important; 
+            page-break-after: always;
+            box-shadow: none !important;
+            margin: 10px auto !important;
+          }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          @page { size: 85mm 55mm portrait; margin: 0; }
+        }
+      `}</style>
+    </div>,
+    document.body
+  );
+};
+
 // --- COMPONENTE: ADMIN PANEL ---
 const AdminPanel = ({ alSalir }) => {
   const [registros, setRegistros] = useState([]);
@@ -280,6 +460,7 @@ const AdminPanel = ({ alSalir }) => {
   const [notificacion, setNotificacion] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [mostrarReportes, setMostrarReportes] = useState(false);
+  const [mostrarExcelPreview, setMostrarExcelPreview] = useState(false);
   const [menuCatAbierto, setMenuCatAbierto] = useState(false);
  
   const categorias = ['TODOS', 'INFANTIL', 'CADETE', 'JUVENIL', 'LIBRE / ABSOLUTO', 'SENIOR'];
@@ -303,11 +484,13 @@ const AdminPanel = ({ alSalir }) => {
       <AnimatePresence>{editando && <ModalEditar atleta={editando} alCerrar={() => setEditando(null)} alGuardar={() => { setEditando(null); dispararNotif("Datos actualizados"); cargarDatos(); }} />}</AnimatePresence>
       <AnimatePresence>{viendoFicha && <ModalFichaDetallada atleta={viendoFicha} alCerrar={() => setViendoFicha(null)} />}</AnimatePresence>
       <AnimatePresence>{mostrarReportes && <VistaReportes registros={registrosFiltrados} alCerrar={() => setMostrarReportes(false)} />}</AnimatePresence>
+      <AnimatePresence>{mostrarExcelPreview && <ExcelPreviewModal registros={registrosFiltrados} alCerrar={() => setMostrarExcelPreview(false)} />}</AnimatePresence>
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
         <div><h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Panel <span className="text-[#f39200]">Directiva</span></h2><p className="text-[10px] text-stone-500 font-bold tracking-[0.4em] mt-2 uppercase">Delta Te Quiero Chess Administration</p></div>
         <div className="flex gap-4">
           <button onClick={() => setMostrarReportes(true)} className="flex items-center gap-2 bg-[#f39200]/10 text-[#f39200] border border-[#f39200]/30 px-6 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-[#f39200] hover:text-black transition-all cursor-pointer"><BarChart3 size={16}/> Reportes</button>
+          <button onClick={() => setMostrarExcelPreview(true)} className="flex items-center gap-2 bg-green-500/10 text-green-400 border border-green-500/30 px-6 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-green-500 hover:text-black transition-all cursor-pointer"><FileSpreadsheet size={16}/> Descargar Excel</button>
           <button onClick={alSalir} className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-black p-4 rounded-2xl border border-red-500/20 cursor-pointer"><LogOut size={24} /></button>
         </div>
       </div>
@@ -386,6 +569,7 @@ const AdminPanel = ({ alSalir }) => {
 const VistaAtleta = ({ sesion, setSesion, alSalir }) => {
   const [subiendo, setSubiendo] = useState(false);
   const [verDiploma, setVerDiploma] = useState(false);
+  const [verCarnet, setVerCarnet] = useState(false);
   const manejarSubidaFoto = async (e) => {
     const archivo = e.target.files[0]; if (!archivo) return;
     try {
@@ -399,6 +583,7 @@ const VistaAtleta = ({ sesion, setSesion, alSalir }) => {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative z-10 max-w-5xl mx-auto px-6 py-10">
       <AnimatePresence>{verDiploma && <ModalDiploma atleta={sesion} alCerrar={() => setVerDiploma(false)} />}</AnimatePresence>
+      <AnimatePresence>{verCarnet && <ModalCarnet atleta={sesion} alCerrar={() => setVerCarnet(false)} />}</AnimatePresence>
       <div className="bg-[#080808]/90 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl backdrop-blur-3xl flex flex-col lg:flex-row">
         <div className="bg-[#f39200] p-12 flex flex-col items-center justify-center text-black lg:w-96 relative">
           <div className="relative group w-40 h-40 bg-black/20 rounded-full border-4 border-black/5 overflow-hidden shadow-2xl flex items-center justify-center">
@@ -411,7 +596,10 @@ const VistaAtleta = ({ sesion, setSesion, alSalir }) => {
           <h3 className="font-black uppercase text-2xl text-center mt-6 tracking-tighter italic leading-tight">{sesion.nombre}</h3>
           <p className="text-[9px] font-black bg-black text-[#f39200] px-4 py-1.5 rounded-full mt-4 uppercase tracking-widest">{obtenerCategoria(sesion.edad)}</p>
           {sesion.status === 'aprobado' && (
-            <button onClick={() => setVerDiploma(true)} className="mt-8 bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all flex items-center gap-2 shadow-2xl cursor-pointer"><Award size={16} className="text-[#f39200]"/> Mi Diploma Oficial</button>
+            <>
+              <button onClick={() => setVerDiploma(true)} className="mt-8 bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all flex items-center gap-2 shadow-2xl cursor-pointer"><Award size={16} className="text-[#f39200]"/> Mi Diploma Oficial</button>
+              <button onClick={() => setVerCarnet(true)} className="mt-4 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-black px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-110 hover:shadow-[0_0_25px_rgba(251,191,36,0.6)] transition-all flex items-center gap-2 shadow-lg cursor-pointer border-2 border-yellow-300/50"><CreditCard size={16} className="text-black"/> Carnet Oficial</button>
+            </>
           )}
         </div>
         <div className="p-10 flex-1 space-y-8">
@@ -443,6 +631,223 @@ const LayoutBase = ({ children, piezas }) => (
   </div>
 );
 
+// --- COMPONENTE: EXCEL PREVIEW MODAL ---
+const ExcelPreviewModal = ({ registros, alCerrar }) => {
+  const [descargando, setDescargando] = useState(false);
+
+  // Preparar datos para Excel
+  const prepararDatosExcel = () => {
+    return registros.map((r, idx) => ({
+      '#': idx + 1,
+      'ID': r.id,
+      'NOMBRE': r.nombre,
+      'EMAIL': r.email,
+      'TELÉFONO': r.telefono || 'N/A',
+      'EDAD': r.edad,
+      'CATEGORÍA': obtenerCategoria(r.edad),
+      'NIVEL': r.nivel,
+      'ELO FIDE': r.elo_fide || 'N/A',
+      'ESTATUS': r.status === 'aprobado' ? 'Aprobado' : 'En Revisión',
+      'FECHA': new Date().toLocaleDateString('es-ES')
+    }));
+  };
+
+  // Descargar archivo Excel
+  const descargarExcel = async () => {
+    setDescargando(true);
+    try {
+      const data = prepararDatosExcel();
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Atletas Delta");
+      
+      // Estilos para las columnas
+      const colWidths = [
+        { wch: 5 },  // #
+        { wch: 8 },  // ID
+        { wch: 30 }, // NOMBRE
+        { wch: 35 }, // EMAIL
+        { wch: 15 }, // TELÉFONO
+        { wch: 8 },  // EDAD
+        { wch: 20 }, // CATEGORÍA
+        { wch: 20 }, // NIVEL
+        { wch: 12 }, // ELO FIDE
+        { wch: 15 }, // ESTATUS
+        { wch: 15 }  // FECHA
+      ];
+      worksheet['!cols'] = colWidths;
+      
+      const fileName = `DeltaChess_Atletas_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error('Error al descargar:', error);
+      alert('Error al generar el archivo Excel');
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  // Descargar para móvil (comparte o guarda)
+  const descargarParaMovil = async () => {
+    setDescargando(true);
+    try {
+      const data = prepararDatosExcel();
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Atletas Delta");
+      
+      const fileName = `DeltaChess_Atletas_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      
+      // Para móviles: crear enlace y simular click
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al descargar');
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  const datosPreview = prepararDatosExcel().slice(0, 10);
+
+  return createPortal(
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[1000] bg-[#020202] overflow-y-auto"
+    >
+      <div className="min-h-screen p-4 md:p-8">
+        {/* ENCABEZADO */}
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black italic uppercase text-white">
+                Vista Previa <span className="text-[#f39200]">Excel</span>
+              </h2>
+              <p className="text-[10px] text-stone-500 font-bold tracking-widest mt-1">
+                {registros.length} registros encontrados
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <button 
+                onClick={descargarExcel}
+                disabled={descargando}
+                className="flex items-center justify-center gap-2 bg-[#f39200] text-black px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-xl cursor-pointer disabled:opacity-50"
+              >
+                {descargando ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                DESCARGAR PC
+              </button>
+              <button 
+                onClick={descargarParaMovil}
+                disabled={descargando}
+                className="flex items-center justify-center gap-2 bg-green-500/20 text-green-400 border border-green-500/30 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-500 hover:text-black transition-all cursor-pointer disabled:opacity-50"
+              >
+                {descargando ? <Loader2 className="animate-spin" size={18} /> : <Smartphone size={18} />}
+                DESCARGAR MÓVIL
+              </button>
+              <button 
+                onClick={alCerrar}
+                className="flex items-center justify-center gap-2 bg-white/5 text-stone-400 border border-white/10 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:text-white hover:border-white/30 transition-all cursor-pointer"
+              >
+                <X size={18} />
+                CERRAR
+              </button>
+            </div>
+          </div>
+
+          {/* TABLA EXCEL PREVIEW */}
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-[#f39200] text-black text-[9px] font-black uppercase tracking-wider">
+                    <th className="py-4 px-3">#</th>
+                    <th className="py-4 px-3">ID</th>
+                    <th className="py-4 px-3">NOMBRE</th>
+                    <th className="py-4 px-3">EMAIL</th>
+                    <th className="py-4 px-3">TEL</th>
+                    <th className="py-4 px-3">EDAD</th>
+                    <th className="py-4 px-3">CATEGORÍA</th>
+                    <th className="py-4 px-3">NIVEL</th>
+                    <th className="py-4 px-3">ELO</th>
+                    <th className="py-4 px-3">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 text-[10px]">
+                  {datosPreview.map((r, idx) => (
+                    <tr key={idx} className="hover:bg-stone-50 transition-colors">
+                      <td className="py-3 px-3 text-stone-400 font-mono">{r['#']}</td>
+                      <td className="py-3 px-3 text-stone-400 font-mono">#{r['ID']}</td>
+                      <td className="py-3 px-3 font-bold text-stone-800 uppercase">{r['NOMBRE']}</td>
+                      <td className="py-3 px-3 text-stone-500">{r['EMAIL']}</td>
+                      <td className="py-3 px-3 text-stone-500">{r['TELÉFONO']}</td>
+                      <td className="py-3 px-3 text-stone-500">{r['EDAD']}</td>
+                      <td className="py-3 px-3">
+                        <span className="bg-[#f39200]/10 text-[#f39200] px-2 py-1 rounded-full text-[8px] font-black uppercase">
+                          {r['CATEGORÍA']}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-stone-500">{r['NIVEL']}</td>
+                      <td className="py-3 px-3 text-stone-500">{r['ELO FIDE']}</td>
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase ${r['ESTATUS'] === 'Aprobado' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {r['ESTATUS']}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {registros.length > 10 && (
+              <div className="bg-stone-50 p-4 text-center text-[10px] text-stone-500 font-bold">
+                Mostrando 10 de {registros.length} registros. El archivo Excel contendrá todos los registros.
+              </div>
+            )}
+          </div>
+
+          {/* INFO ADICIONAL */}
+          <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-3 text-stone-400 text-xs font-bold mb-3">
+              <FileSpreadsheet size={18} className="text-[#f39200]" />
+              <span className="uppercase tracking-widest">Información del Archivo</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[10px]">
+              <div>
+                <p className="text-stone-500 uppercase tracking-wider">Total Registros</p>
+                <p className="text-white font-black text-lg">{registros.length}</p>
+              </div>
+              <div>
+                <p className="text-stone-500 uppercase tracking-wider">Aprobados</p>
+                <p className="text-green-400 font-black text-lg">{registros.filter(r => r.status === 'aprobado').length}</p>
+              </div>
+              <div>
+                <p className="text-stone-500 uppercase tracking-wider">En Revisión</p>
+                <p className="text-orange-400 font-black text-lg">{registros.filter(r => r.status !== 'aprobado').length}</p>
+              </div>
+              <div>
+                <p className="text-stone-500 uppercase tracking-wider">Fecha</p>
+                <p className="text-white font-black">{new Date().toLocaleDateString('es-ES')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>,
+    document.body
+  );
+};
+
 const ModalEditar = ({ atleta, alCerrar, alGuardar }) => {
   const [datos, setDatos] = useState({ ...atleta });
   const [guardando, setGuardando] = useState(false);
@@ -450,20 +855,84 @@ const ModalEditar = ({ atleta, alCerrar, alGuardar }) => {
   const enviarEdicion = async () => {
     setGuardando(true);
     try {
-      await supabase.from('aspirantes').update({ nombre: datos.nombre.toUpperCase(), email: datos.email.toLowerCase(), edad: parseInt(datos.edad), nivel: datos.nivel, elo_fide: datos.elo_fide ? parseInt(datos.elo_fide) : null, telefono: datos.telefono }).eq('id', datos.id);
+      await supabase.from('aspirantes').update({ 
+        nombre: datos.nombre.toUpperCase(), 
+        email: datos.email.toLowerCase(), 
+        edad: parseInt(datos.edad), 
+        nivel: datos.nivel, 
+        elo_fide: datos.elo_fide ? parseInt(datos.elo_fide) : null, 
+        telefono: datos.telefono,
+        motivacion: datos.motivacion,
+        status: datos.status
+      }).eq('id', datos.id);
       alGuardar();
     } catch (error) { alert("Error"); } finally { setGuardando(false); }
   };
   return (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md text-white">
-      <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-[#111] border border-[#f39200]/30 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl">
-        <h3 className="text-[#f39200] font-black uppercase text-xs tracking-widest mb-6 italic">Editar Atleta</h3>
+      <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-[#111] border border-[#f39200]/30 p-8 rounded-[2.5rem] max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-[#f39200] font-black uppercase text-xs tracking-widest italic">Editar Atleta #{atleta.id}</h3>
+          <button onClick={alCerrar} className="text-stone-500 hover:text-white cursor-pointer"><X size={20}/></button>
+        </div>
         <div className="space-y-4">
-          <input name="nombre" value={datos.nombre} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none" placeholder="NOMBRE" />
-          <input name="telefono" value={datos.telefono} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none" placeholder="TELÉFONO" />
-          <div className="grid grid-cols-2 gap-4"><input name="email" value={datos.email} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none" /><input name="edad" type="number" value={datos.edad} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none" /></div>
-          <button onClick={enviarEdicion} className="w-full bg-[#f39200] text-black font-black py-4 rounded-xl uppercase text-[10px] cursor-pointer">{guardando ? "GUARDANDO..." : "GUARDAR"}</button>
-          <button onClick={alCerrar} className="w-full text-stone-500 text-[10px] font-black uppercase">Cancelar</button>
+          <div>
+            <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Nombre Completo</label>
+            <input name="nombre" value={datos.nombre} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all" placeholder="NOMBRE COMPLETO" />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Correo Electrónico</label>
+              <input name="email" type="email" value={datos.email} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all" />
+            </div>
+            <div>
+              <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Teléfono</label>
+              <input name="telefono" value={datos.telefono || ''} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all" placeholder="TELÉFONO" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Edad</label>
+              <input name="edad" type="number" value={datos.edad} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all" />
+            </div>
+            <div>
+              <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Nivel</label>
+              <select name="nivel" value={datos.nivel} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all cursor-pointer">
+                <option value="PRINCIPIANTE">PRINCIPIANTE</option>
+                <option value="INTERMEDIO">INTERMEDIO</option>
+                <option value="AVANZADO">AVANZADO</option>
+                <option value="ELITE">ELITE</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">ELO FIDE</label>
+              <input name="elo_fide" type="number" value={datos.elo_fide || ''} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all" placeholder="UR si no tiene" />
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Estado de Cuenta</label>
+            <select name="status" value={datos.status} onChange={manejarCambio} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all cursor-pointer">
+              <option value="revision">EN REVISIÓN</option>
+              <option value="aprobado">APROBADO</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="text-[9px] font-black text-stone-500 uppercase tracking-widest mb-2 block">Motivación de Ingreso</label>
+            <textarea name="motivacion" value={datos.motivacion || ''} onChange={manejarCambio} rows={4} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-[#f39200] transition-all resize-none" placeholder="Motivación del atleta..." />
+          </div>
+          
+          <div className="flex gap-4 pt-4">
+            <button onClick={enviarEdicion} disabled={guardando} className="flex-1 bg-[#f39200] text-black font-black py-4 rounded-xl uppercase text-[10px] cursor-pointer hover:bg-[#e88500] transition-all disabled:opacity-50">
+              {guardando ? "GUARDANDO..." : "GUARDAR CAMBIOS"}
+            </button>
+            <button onClick={alCerrar} className="px-8 bg-white/5 text-stone-500 font-black py-4 rounded-xl uppercase text-[10px] hover:bg-white/10 transition-all cursor-pointer">
+              CANCELAR
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
@@ -502,12 +971,151 @@ const Login = ({ alLoguear }) => {
   );
 };
 
+// --- COMPONENTE: RANKING MODAL ---
+const RankingModal = ({ alCerrar }) => {
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('TODOS');
+  const [rankings, setRankings] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    const fetchRankings = async () => {
+      setCargando(true);
+      const { data } = await supabase
+        .from('aspirantes')
+        .select('nombre, edad, elo_fide, nivel, status')
+        .eq('status', 'aprobado')
+        .not('elo_fide', 'is', null)
+        .gt('elo_fide', 0)
+        .order('elo_fide', { ascending: false });
+      
+      if (data) {
+        const conCategoria = data.map((r, idx) => ({
+          ...r,
+          categoria: obtenerCategoria(r.edad),
+          posicion: idx + 1
+        }));
+        setRankings(conCategoria);
+      }
+      setCargando(false);
+    };
+    fetchRankings();
+  }, []);
+
+  const categorias = ['TODOS', 'INFANTIL', 'CADETE', 'JUVENIL', 'SENIOR', 'LIBRE / ABSOLUTO'];
+  
+  const rankingsFiltrados = categoriaSeleccionada === 'TODOS' 
+    ? rankings 
+    : rankings.filter(r => r.categoria === categoriaSeleccionada);
+
+  const obtenerMedalla = (pos) => {
+    if (pos === 1) return '🥇';
+    if (pos === 2) return '🥈';
+    if (pos === 3) return '🥉';
+    return `#${pos}`;
+  };
+
+  return createPortal(
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[1000] bg-[#020202]/95 backdrop-blur-xl overflow-y-auto"
+    >
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-4">
+            <Trophy className="text-[#f39200]" size={32} />
+            <div>
+              <h2 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight">RANKING</h2>
+              <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">Clasificación por ELO</p>
+            </div>
+          </div>
+          <button 
+            onClick={alCerrar}
+            className="bg-white/5 border border-white/10 p-3 rounded-full hover:bg-[#f39200] hover:border-[#f39200] transition-all"
+          >
+            <X size={24} className="text-white" />
+          </button>
+        </div>
+
+        {/* Categorías Tabs */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {categorias.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoriaSeleccionada(cat)}
+              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${
+                categoriaSeleccionada === cat
+                  ? 'bg-[#f39200] text-black'
+                  : 'bg-white/5 border border-white/10 text-stone-400 hover:border-[#f39200]/50'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Lista de Rankings */}
+        {cargando ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-[#f39200]" size={48} />
+          </div>
+        ) : rankingsFiltrados.length === 0 ? (
+          <div className="text-center py-20">
+            <Users className="mx-auto text-stone-600 mb-4" size={48} />
+            <p className="text-stone-500 font-bold uppercase text-sm">No hay atletas en esta categoría</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {rankingsFiltrados.map((r, idx) => (
+              <motion.div
+                key={r.nombre}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                  idx === 0 
+                    ? 'bg-gradient-to-r from-[#f39200]/20 to-transparent border-[#f39200]/50' 
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                }`}
+              >
+                <div className="w-12 h-12 flex items-center justify-center bg-black/50 rounded-xl text-xl font-black">
+                  {obtenerMedalla(idx + 1)}
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-white font-black text-sm uppercase">{r.nombre}</h4>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[9px] font-bold text-[#f39200] bg-[#f39200]/10 px-2 py-1 rounded-lg uppercase">
+                      {r.categoria}
+                    </span>
+                    <span className="text-[9px] font-bold text-stone-500 uppercase">
+                      {r.nivel}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-black text-[#f39200]">{r.elo_fide || '—'}</p>
+                  <p className="text-[9px] text-stone-500 uppercase font-bold">ELO</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>,
+    document.body
+  );
+};
+
 // --- APP PRINCIPAL ---
 export default function App() {
   const [piezas, setPiezas] = useState([]); const [sesion, setSesion] = useState(null); const [cargandoSesion, setCargandoSesion] = useState(true);
   const [tieneElo, setTieneElo] = useState(false); const [nivel, setNivel] = useState('Principiante'); const [enviando, setEnviando] = useState(false);
   const [mostrarModalExito, setMostrarModalExito] = useState(false); const [totalAtletas, setTotalAtletas] = useState('...');
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [menuHamburguesa, setMenuHamburguesa] = useState(false);
+  const [mostrarRanking, setMostrarRanking] = useState(false);
 
   useEffect(() => {
     const fetchTotal = async () => { const { count } = await supabase.from('aspirantes').select('*', { count: 'exact', head: true }); if(count !== null) setTotalAtletas(count); }; fetchTotal();
@@ -545,10 +1153,74 @@ export default function App() {
     <Router>
       <LayoutBase piezas={piezas}>
         <AnimatePresence>{mostrarModalExito && (<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[500] flex items-center justify-center bg-black/90 p-6"><div className="bg-[#080808] border border-[#f39200] p-10 rounded-[2.5rem] text-center max-w-xs w-full"><CheckCircle size={50} className="text-[#f39200] mx-auto mb-4"/><h3 className="text-white font-black uppercase mb-2">Solicitud Enviada</h3><button onClick={()=>setMostrarModalExito(false)} className="w-full bg-[#f39200] text-black font-black py-3 rounded-xl text-[10px] cursor-pointer">ENTENDIDO</button></div></motion.div>)}</AnimatePresence>
+        
+        {/* Ranking Modal */}
+        <AnimatePresence>
+          {mostrarRanking && <RankingModal alCerrar={() => setMostrarRanking(false)} />}
+        </AnimatePresence>
+        
         <nav className="relative z-50 p-6 md:p-10 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto gap-6">
           <Link to="/" className="flex items-center gap-6 text-white"><img src={logoDelta} className="w-16 h-16 md:w-20 object-contain"/><div className="border-l-2 border-[#f39200]/30 pl-6 text-left"><h1 className="text-xl md:text-3xl font-black uppercase tracking-tighter leading-none italic">DELTA <span className="text-[#f39200]">TE QUIERO</span></h1><p className="text-[8px] md:text-[10px] uppercase tracking-[0.4em] text-stone-500 font-bold">Chess Elite Club</p></div></Link>
-          <div className="flex gap-4">{sesion ? <Link to={sesion.rol === 'admin' ? '/admin' : '/perfil'} className="bg-[#f39200] text-black px-8 py-3 rounded-full text-[10px] font-black uppercase transition-all">MI CUENTA</Link> : <Link to="/login" className="bg-white/5 border border-white/10 px-8 py-3 rounded-full text-[10px] font-black uppercase hover:bg-[#f39200] hover:text-black transition-all">LOGIN</Link>}</div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex gap-4 items-center">
+            <button 
+              onClick={() => setMostrarRanking(true)}
+              className="flex items-center gap-2 bg-[#f39200]/10 border border-[#f39200]/30 px-6 py-3 rounded-full text-[10px] font-black uppercase text-[#f39200] hover:bg-[#f39200] hover:text-black transition-all"
+            >
+              <Trophy size={16} /> RANKING
+            </button>
+            {sesion ? <Link to={sesion.rol === 'admin' ? '/admin' : '/perfil'} className="bg-[#f39200] text-black px-8 py-3 rounded-full text-[10px] font-black uppercase transition-all">MI CUENTA</Link> : <Link to="/login" className="bg-white/5 border border-white/10 px-8 py-3 rounded-full text-[10px] font-black uppercase hover:bg-[#f39200] hover:text-black transition-all">LOGIN</Link>}
+          </div>
+          
+          {/* Mobile Hamburger Menu */}
+          <div className="flex md:hidden gap-3 items-center">
+            <button 
+              onClick={() => setMostrarRanking(true)}
+              className="flex items-center gap-2 bg-[#f39200]/10 border border-[#f39200]/30 p-3 rounded-full text-[#f39200] hover:bg-[#f39200] hover:text-black transition-all"
+            >
+              <Trophy size={20} />
+            </button>
+            <button 
+              onClick={() => setMenuHamburguesa(!menuHamburguesa)}
+              className="bg-white/5 border border-white/10 p-3 rounded-full hover:bg-[#f39200] hover:border-[#f39200] transition-all"
+            >
+              <Menu size={20} className="text-white" />
+            </button>
+          </div>
         </nav>
+        
+        {/* Mobile Menu Dropdown */}
+        <AnimatePresence>
+          {menuHamburguesa && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-full left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 p-6 md:hidden"
+            >
+              <div className="flex flex-col gap-4 max-w-7xl mx-auto">
+                {sesion ? (
+                  <Link 
+                    to={sesion.rol === 'admin' ? '/admin' : '/perfil'} 
+                    onClick={() => setMenuHamburguesa(false)}
+                    className="bg-[#f39200] text-black px-8 py-4 rounded-2xl text-[12px] font-black uppercase text-center transition-all"
+                  >
+                    MI CUENTA
+                  </Link>
+                ) : (
+                  <Link 
+                    to="/login" 
+                    onClick={() => setMenuHamburguesa(false)}
+                    className="bg-white/5 border border-white/10 px-8 py-4 rounded-2xl text-[12px] font-black uppercase text-center hover:bg-[#f39200] hover:text-black transition-all"
+                  >
+                    LOGIN
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <Routes>
           <Route path="/" element={
             <main className="relative z-10 max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 py-10 items-center">
